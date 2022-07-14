@@ -20,33 +20,29 @@
 name: Build and deploy ASP.Net Core app to an Azure Web App
 
 env:
-  AZURE_WEBAPP_NAME: your-app-name    # set this to the name of your Azure Web App
+  AZURE_WEBAPP_NAME: AZURE_WEBAPP_NAME    # set this to the name of your Azure Web App
   AZURE_WEBAPP_PACKAGE_PATH: '.'      # set this to the path to your web app project, defaults to the repository root
-  DOTNET_VERSION: '5'                 # set this to the .NET Core version to use
+  DOTNET_VERSION: '6'                 # set this to the .NET Core version to use
 
 on:
   push:
     branches:
       - "main"
-  workflow_dispatch:
-
-permissions:
-  contents: read
-
+  workflow_dispatch: #used to run the changes manually
 jobs:
-  build:
-    runs-on: ubuntu-latest
+  build: #responsible for compiling and publish the artifact into git repo
+    runs-on: ubuntu-latest #specify in which it needs to be run
 
-    steps:
-      - uses: actions/checkout@v3
+    steps: 
+      - uses: actions/checkout@v3 #to use built in actions 
 
       - name: Set up .NET Core
-        uses: actions/setup-dotnet@v2
+        uses: actions/setup-dotnet@v2 
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
       
       - name: Set up dependency caching for faster builds
-        uses: actions/cache@v3
+        uses: actions/cache@v3 #to cache nuget packages
         with:
           path: ~/.nuget/packages
           key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json') }}
@@ -57,7 +53,7 @@ jobs:
         run: dotnet build --configuration Release
 
       - name: dotnet publish
-        run: dotnet publish -c Release -o ${{env.DOTNET_ROOT}}/myapp
+        run: dotnet publish -c Release -o ${{env.DOTNET_ROOT}}/myapp # run is keyword which is used to run commands
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v3
@@ -65,11 +61,10 @@ jobs:
           name: .net-app
           path: ${{env.DOTNET_ROOT}}/myapp
 
-  deploy:
-    permissions:
-      contents: none
+  deploy: # download the artifact published before and depploy the application into target env
+  
     runs-on: ubuntu-latest
-    needs: build
+    needs: build #dependency job namei.e, runs only after the build succeds
     environment:
       name: 'Development'
       url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
@@ -84,6 +79,6 @@ jobs:
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v2
         with:
-          app-name: ${{ env.AZURE_WEBAPP_NAME }}
-          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          app-name: ${{ env.aspdotnet-webapp-demo }}
+          publish-profile: ${{ secrets.PUBLISH_PROFILE }}
           package: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
